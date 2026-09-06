@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.DS_Store
+.pi/
+.agents/
+.claude/
+pi-session-*.html
+*.log
