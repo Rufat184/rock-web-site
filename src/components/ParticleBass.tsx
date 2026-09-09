@@ -242,8 +242,8 @@ uniform vec3 uColor;
 void main(){
   float square=smoothstep(0.55,0.35,length(vCorner));
   if(square<0.02) discard;
-  float glow=smoothstep(8.0,0.0,length(vWorldPos.xy))*0.3*vAssembly;
-  float alpha=vOpacity*(mix(0.50,0.80,vAssembly)+glow);
+  float glow=smoothstep(10.0,0.0,length(vWorldPos.xy))*0.45*vAssembly;
+  float alpha=vOpacity*(mix(0.62,0.92,vAssembly)+glow);
   alpha*=(sin(uTime*1.5+vWorldPos.x*5.0+vWorldPos.y*3.0)*0.1+0.9)*min(vLight,1.0);
   vec3 color=(uColor+glow*vec3(0.2,0.3,0.5))*vLight;
   color=mix(color,color*vec3(1.07,1.02,0.94),clamp(vLight-1.0,0.0,1.0));
@@ -465,8 +465,8 @@ export function ParticleBass({ className, anchor }: { className?: string; anchor
       gl.uniformMatrix4fv(u.view, false, view);
       gl.uniform1f(u.time, t);
       gl.uniform1f(u.assembly, D);
-      gl.uniform1f(u.size, 0.062);
-      gl.uniform1f(u.loose, reduced ? 0 : 0.3);
+      gl.uniform1f(u.size, 0.085);
+      gl.uniform1f(u.loose, reduced ? 0 : 0.15);
       gl.uniform1f(u.scatter, 1.6 * Math.min(1, 1.5 * scrollP));
       gl.uniform2f(u.mouse, local.x, local.y);
       gl.uniform1f(u.mRadius, MOUSE.radius);
