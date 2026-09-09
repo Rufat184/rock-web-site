@@ -483,6 +483,7 @@ canvas {
   top: 50%;
   transform: translateY(-50%);
   writing-mode: vertical-rl;
+  white-space: nowrap; /* keep the city list on a single line */
   font-family: var(--font-body);
   font-weight: 500;
   font-size: 0.62rem;
