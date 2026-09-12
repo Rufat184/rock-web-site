@@ -3,6 +3,10 @@
 // All names, dates, tracks and gear shown on the site live here.
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// SECTION: ARTIST — identity, bio & contact
+// Used by: Hero, About, Contact, Footer (name, tagline, bio, email, socials)
+// ---------------------------------------------------------------------------
 export const artist = {
   name: "STRUM DANA",
   role: "BASSIST",
@@ -20,6 +24,10 @@ export const artist = {
   ],
 };
 
+// ---------------------------------------------------------------------------
+// SECTION: TOUR — upcoming show dates
+// Used by: Tour section (date, city, venue, country, soldOut badge)
+// ---------------------------------------------------------------------------
 export type TourDate = {
   date: string; // e.g. "SEP 12"
   city: string;
@@ -37,8 +45,11 @@ export const tourDates: TourDate[] = [
   { date: "NOV 01", city: "London", venue: "O2 Academy Brixton", country: "United Kingdom" },
 ];
 
-// Notes are MIDI numbers (E1 = 28). The site renders each track's riff
-// live through the Web Audio API — no audio files needed.
+// ---------------------------------------------------------------------------
+// SECTION: MUSIC — track list & riff data
+// Used by: Music section + RiffPlayer (each track's riff is synthesized
+// live via Web Audio — notes are MIDI numbers, E1 = 28, no audio files)
+// ---------------------------------------------------------------------------
 export type Track = {
   title: string;
   year: string;
@@ -78,6 +89,10 @@ export const tracks: Track[] = [
   },
 ];
 
+// ---------------------------------------------------------------------------
+// SECTION: BASS NECK — string tuning for the interactive neck
+// Used by: BassNeck component (clickable 4-string pluck)
+// ---------------------------------------------------------------------------
 export type BassString = {
   name: string; // label shown on the neck
   midi: number; // open-string MIDI note
@@ -91,6 +106,10 @@ export const bassStrings: BassString[] = [
   { name: "G", midi: 43 },
 ];
 
+// ---------------------------------------------------------------------------
+// SECTION: GEAR — equipment list
+// Used by: Gear section (name, type, note for each item)
+// ---------------------------------------------------------------------------
 export type GearItem = {
   name: string;
   type: string;
