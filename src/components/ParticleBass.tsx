@@ -13,7 +13,7 @@ const MOUSE = { radius: 4.9, strength: 0.8, decay: 0.2, distort: 0.5 };
 const LIGHT = { x: 3.2, y: 4.4, z: 3, range: 14, shadeMin: 0.42, shadeMax: 2.9, followX: 1.05 };
 const SHIFT_X = 0.35; // subtle rightward nudge of the assembled silhouette
 const TILT_Z = (-10 * Math.PI) / 180; // extra clockwise tilt: neck more vertical
-const COLOR = [0.95, 0.83, 0.93];
+const COLOR = [0.79, 0.66, 0.88]; // matches --accent #c9a8e0
 
 function drawBass(ctx: CanvasRenderingContext2D, S: number) {
   ctx.clearRect(0, 0, S, S);
@@ -436,7 +436,7 @@ export function ParticleBass({ className, anchor }: { className?: string; anchor
         g.rot.z = TILT_Z;
         g.pos.y = 0;
       } else {
-        g.rot.z = TILT_Z + 0.04 * Math.sin(0.25 * t) + (1 - D) * 0.3;
+        g.rot.z = TILT_Z; // fixed -10° tilt
         g.rot.x = 0.05 * Math.sin(0.056 * t);
         g.rot.y = 0.1 * Math.sin(0.08 * t);
         g.pos.y = 0.15 * Math.sin(0.4 * t);

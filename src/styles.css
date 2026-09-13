@@ -7,15 +7,15 @@
    ========================================================================== */
 
 :root {
-  --bg: #0c0a0e;
-  --bg-2: #120f16;
-  --panel: #16121b;
-  --ink: #f5e7f6;
-  --ink-2: #a893ab;
-  --accent: #dec0d8;
-  --accent-deep: #b274a6;
-  --line: rgba(222, 192, 216, 0.14);
-  --line-strong: rgba(222, 192, 216, 0.38);
+  --bg:          #0a0810;
+  --bg-2:        #110e1a;
+  --panel:       #151222;
+  --ink:         #f0e6f2;
+  --ink-2:       #9d8fa8;
+  --accent:      #c9a8e0;
+  --accent-deep: #9b5fb8;
+  --line:        rgba(201, 168, 224, 0.14);
+  --line-strong: rgba(201, 168, 224, 0.38);
 
   --font-display: "Jost", "Futura", "Century Gothic", sans-serif;
   --font-body: "Barlow", system-ui, -apple-system, sans-serif;
