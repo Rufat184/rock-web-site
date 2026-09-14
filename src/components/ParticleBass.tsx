@@ -9,10 +9,10 @@ const FOV = (50 * Math.PI) / 180;
 const CAM_Z = 18;
 const RES = 110;
 const K = 13 / RES;
-const MOUSE = { radius: 4.9, strength: 0.8, decay: 0.2, distort: 0.5 };
+const MOUSE = { radius: 4.9, strength: 0.8, decay: 0.85, distort: 0.5 };
 const LIGHT = { x: 3.2, y: 4.4, z: 3, range: 14, shadeMin: 0.42, shadeMax: 2.9, followX: 1.05 };
 const SHIFT_X = 0.35; // subtle rightward nudge of the assembled silhouette
-const TILT_Z = (-10 * Math.PI) / 180; // extra clockwise tilt: neck more vertical
+const TILT_Z = (-25 * Math.PI) / 180; // extra clockwise tilt: neck more vertical
 const COLOR = [0.79, 0.66, 0.88]; // matches --accent #c9a8e0
 
 function drawBass(ctx: CanvasRenderingContext2D, S: number) {
@@ -400,8 +400,18 @@ export function ParticleBass({ className, anchor }: { className?: string; anchor
     const onMove = (e: MouseEvent) => {
       const r = canvas.getBoundingClientRect();
       if (!r.width) return;
-      mouse.x = ((e.clientX - r.left) / r.width) * 2 - 1;
-      mouse.y = -(((e.clientY - r.top) / r.height) * 2 - 1);
+      // NDC of the cursor within the canvas.
+      const nx = ((e.clientX - r.left) / r.width) * 2 - 1;
+      const ny = -(((e.clientY - r.top) / r.height) * 2 - 1);
+      // Project the cursor onto the z=0 plane through the camera. The view is
+      // a pure translation (camera at (0,0,CAM_Z) looking down -Z), so a world
+      // point on that plane is (ndc * half-extent, y, 0). Using the live
+      // viewport height (not the stale per-frame value) keeps the light and
+      // scatter exactly under the cursor even between resizes.
+      const cr = canvas.getBoundingClientRect();
+      const h = 2 * CAM_Z * Math.tan(FOV / 2);
+      mouse.x = nx * (h * (cr.width / cr.height)) * 0.5;
+      mouse.y = ny * h * 0.5;
       mouseActive = true;
       hasMoved = true;
     };
@@ -451,10 +461,13 @@ export function ParticleBass({ className, anchor }: { className?: string; anchor
 
       const targetS = reduced ? 0 : mouseActive && hasMoved ? MOUSE.strength : 0;
       mouseStrength += (targetS - mouseStrength) * (1 - Math.pow(0.05, dt));
-      const mx = mouse.x * vw * 0.5, my = mouse.y * vh * 0.5;
+      // mouse.x/y are already world coordinates on the z=0 plane (see onMove);
+      // lerp them toward the cursor for a 1-frame settle so the light/scatter
+      // sits right on the cursor instead of lagging behind it.
       if (hasMoved) {
-        if (mouseStrength < 0.01) { smooth.x = mx; smooth.y = my; }
-        else { smooth.x += (mx - smooth.x) * MOUSE.decay; smooth.y += (my - smooth.y) * MOUSE.decay; }
+        const k = 1 - Math.pow(0.0005, dt);
+        smooth.x += (mouse.x - smooth.x) * k;
+        smooth.y += (mouse.y - smooth.y) * k;
       }
       const local = toGroupLocal(smooth.x, smooth.y, g.pos, g.rot, g.scale);
 

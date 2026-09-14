@@ -1,9 +1,10 @@
 # Current Task Plan
 
-## Goal: Make the bass silhouette in the hero more legible (user-approved: denser particles, tighter float, stronger glow)
+## Goal: Mouse-follow light + scatter should sit exactly under the cursor when hovering the hero bass
 
-All changes are in `src/components/ParticleBass.tsx`.
+Root cause: in `ParticleBass.tsx`, the smoothed mouse position is lerped with a
+per-frame factor of `MOUSE.decay` (0.85) — i.e. it jumps 85% of the remaining
+distance every frame, so it only reaches the cursor after ~10 frames (~300ms),
+which reads as a lagging, offset light/scatter.
 
-- [x] Task 1 — Denser silhouette: raise particle size (`uSize` 0.062 → ~0.085) and fragment alpha (`mix(0.50, 0.80)` → ~`mix(0.62, 0.92)`). Verify: `npm run build` + browser.
-- [x] Task 2 — Tighter, more anchored shape: reduce idle float (`uLoose` 0.3 → 0.15) and strengthen the center glow (factor 0.3 → ~0.45, range 8 → 10). Verify: `npm run build` + browser.
-- [x] Task 3 — Final verification: desktop + mobile visual check in browser, final `npm run build`, tune if over-bright.
+- [ ] Task 1 — Make the mouse smoothing frame-rate independent and snappy: lerp with `1 - pow(0.0005, dt)` (settles in ~1 frame) instead of the fixed 0.85 factor. Verify: `npm run build` + browser (light/scatter tracks the cursor with no visible offset).
