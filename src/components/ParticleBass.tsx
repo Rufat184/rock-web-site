@@ -1,9 +1,11 @@
 import { useEffect, useRef } from "react";
 
-/* Particle bass: ~2,700 instanced quads form a 5-string bass silhouette.
-   Port of the deepseek.com/harness hero effect: fly-in assembly, idle
-   float, radial mouse scatter, mouse-follow light, scroll dispersion.
-   Raw WebGL (2 preferred, 1 fallback), zero dependencies. */
+/**
+ * Particle bass effect: ~2,700 instanced quads form a 5-string bass silhouette.
+ * Port of the deepseek.com/harness hero effect: fly-in assembly, idle
+ * float, radial mouse scatter, mouse-follow light, scroll dispersion.
+ * Raw WebGL (2 preferred, 1 fallback), zero dependencies.
+ */
 
 const FOV = (50 * Math.PI) / 180;
 const CAM_Z = 18;
@@ -15,13 +17,23 @@ const SHIFT_X = 0.35; // subtle rightward nudge of the assembled silhouette
 const TILT_Z = (-25 * Math.PI) / 180; // extra clockwise tilt: neck more vertical
 const COLOR = [0.79, 0.66, 0.88]; // matches --accent #c9a8e0
 
-function drawBass(ctx: CanvasRenderingContext2D, S: number) {
+// Bass body color palette: warm metallic silver
+const BODY_COLOR = [0.92, 0.88, 0.82]; // light metallic silver
+const BODY_SHADE = [0.78, 0.72, 0.66]; // darker side
+
+/**
+ * Draw bass guitar silhouette using Canvas 2D context.
+ * @param ctx - Canvas 2D context
+ * @param S - Canvas size (width/height)
+ */
+function drawBass(ctx: CanvasRenderingContext2D, S: number): void {
   ctx.clearRect(0, 0, S, S);
   ctx.fillStyle = "#fff";
   ctx.save();
-  // These coordinates trace the supplied bass reference directly: body at the
-  // lower-left, headstock at the upper-right, and the sharp horn on the right./co
+  // Scale the 1500x1500-authored coordinates to fit the RES canvas (110x110).
   ctx.scale(S / 1500, S / 1500);
+  // These coordinates trace the supplied bass reference directly: body at the
+  // lower-left, headstock at the upper-right, and the sharp horn on the right.
 
   ctx.beginPath();
   // Body, starting at the upper shoulder beside the neck.
@@ -41,7 +53,7 @@ function drawBass(ctx: CanvasRenderingContext2D, S: number) {
   ctx.closePath();
   ctx.fill();
 
-  // Long fretboard, tapering slightly toward the headstock.ç
+  // Long fretboard, tapering slightly toward the headstock.
   ctx.beginPath();
   ctx.moveTo(493, 937);
   ctx.lineTo(575, 1015);
@@ -84,12 +96,16 @@ type PData = {
   edges: Float32Array; rands: Float32Array; count: number;
 };
 
+/**
+ * Sample bass silhouette from canvas and generate particle data.
+ * @returns Particle data or null if canvas context fails
+ */
 function sampleBass(): PData | null {
   const draw = document.createElement("canvas");
-  draw.width = draw.height = 240;
+  draw.width = draw.height = RES;
   const dc = draw.getContext("2d", { willReadFrequently: true });
   if (!dc) return null;
-  drawBass(dc, 240);
+  drawBass(dc, RES);
   const grid = document.createElement("canvas");
   grid.width = grid.height = RES;
   const gc = grid.getContext("2d", { willReadFrequently: true });
@@ -106,7 +122,8 @@ function sampleBass(): PData | null {
       if (!dx && !dy) continue;
       const nx = x + dx, ny = y + dy;
       if (nx < 0 || ny < 0 || nx >= RES || ny >= RES) continue;
-      if (lum[ny * RES + nx] > 0.2) return false;
+      const idx = ny * RES + nx;
+      if (lum[idx] > 0.2) return false;
     }
     return true;
   };
@@ -121,7 +138,9 @@ function sampleBass(): PData | null {
     for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
       if (!dx && !dy) continue;
       const nx = x + dx, ny = y + dy;
-      if (nx < 0 || ny < 0 || nx >= RES || ny >= RES || lum[ny * RES + nx] <= 0.2) e++;
+      if (nx < 0 || ny < 0 || nx >= RES || ny >= RES) continue;
+      const idx = ny * RES + nx;
+      if (lum[idx] <= 0.2) e++;
     }
     ed.push(e / 8);
   }
@@ -239,13 +258,21 @@ varying float vLight;
 varying float vAssembly;
 uniform float uTime;
 uniform vec3 uColor;
+uniform vec3 uBodyColor;
+uniform vec3 uBodyShade;
 void main(){
   float square=smoothstep(0.55,0.35,length(vCorner));
   if(square<0.02) discard;
   float glow=smoothstep(10.0,0.0,length(vWorldPos.xy))*0.45*vAssembly;
   float alpha=vOpacity*(mix(0.62,0.92,vAssembly)+glow);
   alpha*=(sin(uTime*1.5+vWorldPos.x*5.0+vWorldPos.y*3.0)*0.1+0.9)*min(vLight,1.0);
-  vec3 color=(uColor+glow*vec3(0.2,0.3,0.5))*vLight;
+  // Use body color with shading
+  vec3 color=uBodyColor*vLight;
+  color=mix(color,uBodyShade,smoothstep(0.0,1.0,vLight));
+  // Add subtle highlight for glossy finish
+  float specular=smoothstep(0.6,1.0,vLight);
+  color+=vec3(0.95,0.92,0.88)*specular*0.3;
+  color=(uColor+glow*vec3(0.2,0.3,0.5))*vLight;
   color=mix(color,color*vec3(1.07,1.02,0.94),clamp(vLight-1.0,0.0,1.0));
   gl_FragColor=vec4(color,alpha*square);
 }`;
@@ -307,20 +334,26 @@ export function ParticleBass({ className, anchor }: { className?: string; anchor
       const s = gl.createShader(type);
       gl.shaderSource(s, src);
       gl.compileShader(s);
-      if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw gl.getShaderInfoLog(s);
+      if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+        const log = gl.getShaderInfoLog(s);
+        throw new Error(log ?? "Shader compile failed");
+      }
       return s;
     };
     const prog = gl.createProgram()!;
     gl.attachShader(prog, mk(gl.VERTEX_SHADER, VERT));
     gl.attachShader(prog, mk(gl.FRAGMENT_SHADER, FRAG));
     gl.linkProgram(prog);
-    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw gl.getProgramInfoLog(prog);
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+      const log = gl.getProgramInfoLog(prog);
+      throw new Error(log ?? "Program link failed");
+    }
     gl.useProgram(prog);
 
     const buf = (arr: number[] | Float32Array) => {
       const b = gl.createBuffer();
       gl.bindBuffer(gl.ARRAY_BUFFER, b);
-      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(arr), gl.STATIC_DRAW);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(arr), gl.DYNAMIC_DRAW);
       return b;
     };
     const quad = buf([-0.5, -0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, 0.5]);
@@ -329,7 +362,14 @@ export function ParticleBass({ className, anchor }: { className?: string; anchor
     const bI = buf(Array.from({ length: data.count }, (_, i) => i));
 
     const A: Record<string, number> = {};
-    const attr = (name: string, b: any, n: number, inst = false) => {
+    /**
+     * Bind attribute buffer with vertexAttribPointer.
+     * @param name - Attribute name
+     * @param b - WebGLBuffer
+     * @param n - Number of components (2 or 3)
+     * @param inst - Is instanced
+     */
+    const attr = (name: string, b: WebGLBuffer, n: number, inst = false): void => {
       const loc = gl.getAttribLocation(prog, name);
       A[name] = loc;
       gl.bindBuffer(gl.ARRAY_BUFFER, b);
@@ -352,7 +392,7 @@ export function ParticleBass({ className, anchor }: { className?: string; anchor
       mRadius: U("uMouseRadius"), mStrength: U("uMouseStrength"), mDistort: U("uMouseDistort"),
       lightPos: U("uLightPos"), lightRange: U("uLightRange"), shadeMin: U("uShadeMin"),
       shadeMax: U("uShadeMax"), groupPos: U("uGroupPos"), groupRot: U("uGroupRot"),
-      groupScale: U("uGroupScale"), color: U("uColor"),
+      groupScale: U("uGroupScale"), color: U("uColor"), bodyColor: U("uBodyColor"), bodyShade: U("uBodyShade"),
     };
     const view = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, -CAM_Z, 1]);
     let proj = perspective(FOV, 1, 0.1, 100);
@@ -367,7 +407,7 @@ export function ParticleBass({ className, anchor }: { className?: string; anchor
 
     const resize = () => {
       const r = canvas.getBoundingClientRect();
-      const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+      const dpr = window.devicePixelRatio || 1;
       const w = Math.max(1, Math.round(r.width * dpr));
       const h = Math.max(1, Math.round(r.height * dpr));
       if (canvas.width !== w || canvas.height !== h) {
@@ -478,7 +518,7 @@ export function ParticleBass({ className, anchor }: { className?: string; anchor
       gl.uniformMatrix4fv(u.view, false, view);
       gl.uniform1f(u.time, t);
       gl.uniform1f(u.assembly, D);
-      gl.uniform1f(u.size, 0.085);
+      gl.uniform1f(u.size, 0.058);
       gl.uniform1f(u.loose, reduced ? 0 : 0.15);
       gl.uniform1f(u.scatter, 1.6 * Math.min(1, 1.5 * scrollP));
       gl.uniform2f(u.mouse, local.x, local.y);
@@ -493,6 +533,8 @@ export function ParticleBass({ className, anchor }: { className?: string; anchor
       gl.uniform3f(u.groupRot, g.rot.x, g.rot.y, g.rot.z);
       gl.uniform1f(u.groupScale, g.scale);
       gl.uniform3f(u.color, COLOR[0] * D * fade, COLOR[1] * D * fade, COLOR[2] * D * fade);
+      gl.uniform3f(u.bodyColor, BODY_COLOR[0] * D * fade, BODY_COLOR[1] * D * fade, BODY_COLOR[2] * D * fade);
+      gl.uniform3f(u.bodyShade, BODY_SHADE[0] * D * fade, BODY_SHADE[1] * D * fade, BODY_SHADE[2] * D * fade);
       drawInst(data.count);
     };
     raf = requestAnimationFrame(frame);
@@ -510,5 +552,13 @@ export function ParticleBass({ className, anchor }: { className?: string; anchor
     };
   }, []);
 
+  /**
+   * ParticleBass component: WebGL instanced quads form a 5-string bass silhouette.
+   * @param props - Component props
+   * @param props.className - CSS class name
+   * @param props.anchor - CSS selector for anchor element
+   * @returns Canvas element
+   */
   return <canvas ref={ref} className={className} aria-hidden="true" />;
 }
+//
