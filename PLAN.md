@@ -10,7 +10,7 @@ Fix guitar shape: horn not visible, dots too big (ParticleBass.tsx).
 5. Dead detail (15%-white sliver, sub-pixel black dots) adds nothing at 110px sampling.
 
 ## Tasks
-- [ ] Task 1 — Restore neck + headstock paths in drawBass; scale RES/1500; drop dead detail
-- [ ] Task 2 — Fix fragment shader: filled dots (smoothstep 0.55→0.35) + center glow
-- [ ] Task 3 — Reduce dot size uSize 0.085 → 0.058
-- [ ] Task 4 — npm run build + visual check at http://localhost:5500
+- [x] Task 1 — Restore neck + headstock paths in drawBass; scale RES/1500; drop dead detail
+- [x] Task 2 — Fix fragment shader: filled dots (smoothstep 0.55→0.35) + center glow
+- [x] Task 3 — Reduce dot size uSize 0.085 → 0.058
+- [x] Task 4 — npm run build + visual check at http://localhost:5500
