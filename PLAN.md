@@ -1,16 +1,33 @@
 # Current Task Plan
 
-Fix guitar shape: horn not visible, dots too big (ParticleBass.tsx).
+Fix agent-doc and tooling drift (option B-i: keep the installed tooling and make it real).
 
-## Root cause (verified with scripts/diag-shape.mjs rasterization)
-1. Fragment shader `smoothstep` inverted → particles render as hollow rings; the thin horn (3–5 px in the 110px sample grid) falls out.
-2. `drawBass` scales by RES/2000 but coordinates are authored in 1500 space → shape 25% too small, horn thinner.
-3. Neck + headstock paths were deleted → tuning machines float, horn reads weaker.
-4. `uSize` 0.085 ≈ full particle spacing (0.118) → dots overlap into blobs.
-5. Dead detail (15%-white sliver, sub-pixel black dots) adds nothing at 110px sampling.
+## Verified problems
+1. `CLAUDE.md` deleted in `9cf6320`, but `AGENTS.md:53` still tells agents to keep it in sync.
+2. `AGENTS.md` says "no test runner, no linter" while `eslint@10`, `prettier@3`, `vitest@4`, `jsdom`,
+   `coverage-v8` are in devDependencies and `.eslintrc.js`, `.prettierrc`, `vitest.config.ts` exist.
+3. ESLint cannot run: `.eslintrc.js` is legacy eslintrc format (and `module.exports` in a
+   `"type": "module"` package); ESLint 10 requires `eslint.config.*`.
+4. No `lint` / `test` / `format` scripts, so the installed tools are unreachable.
+5. `vitest run` exits 1 — zero test files; `src/test/webAudioMock.ts` is orphaned.
+6. `src/lib/audioUtils.ts` ("single source of truth") is imported by nobody; `midiToFreq` is still
+   duplicated in `RiffPlayer.tsx` and `BassNeck.tsx`. (Documented, not wired — wiring is option C.)
+7. Structure tree omits `src/lib/audioUtils.ts`, `src/test/webAudioMock.ts`, `scripts/diag-shape.mjs`,
+   and all root tool configs.
 
 ## Tasks
-- [x] Task 1 — Restore neck + headstock paths in drawBass; scale RES/1500; drop dead detail
-- [x] Task 2 — Fix fragment shader: filled dots (smoothstep 0.55→0.35) + center glow
-- [x] Task 3 — Reduce dot size uSize 0.085 → 0.058
-- [x] Task 4 — npm run build + visual check at http://localhost:5500
+- [x] Task 1 — Replace `.eslintrc.js` with a flat `eslint.config.js` (JS + TS, deliberate `any` in
+      ParticleBass stays a warning); `npx eslint src` must run and exit 0.
+- [x] Task 2 — Add `lint`, `lint:fix`, `test`, `test:watch`, `format`, `format:check` scripts to
+      `package.json`; align `.prettierrc` `singleQuote` to the repo's existing double-quote style.
+- [x] Task 3 — Add one real spec (`src/content.test.ts`) over the pure data in `content.ts` so
+      `npm test` exits 0 instead of "No test files found".
+- [x] Task 4 — Rewrite `AGENTS.md`: remove the `CLAUDE.md` reference, correct the commands table and
+      structure tree, state the real verification gate, document the `audioUtils.ts` dead-code state.
+- [x] Task 5 — Final verification: `npm run lint`, `npm test`, `npm run build` all pass; check
+      `git status` for unintended churn.
+
+## Explicitly out of scope (option C, not B)
+- Importing `audioUtils.ts` from `RiffPlayer` / `BassNeck` / `pluck` (shares one AudioContext — real
+  runtime behaviour change).
+- Running `prettier --write` across the repo (~9 src files of formatting-only churn).
